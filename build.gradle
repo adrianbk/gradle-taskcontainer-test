@@ -1,0 +1,41 @@
+repositories {
+    jcenter()
+}
+
+dependencies {
+}
+
+subprojects{
+	apply plugin: 'groovy'
+	apply plugin: 'maven-publish'
+	
+	
+	publishing {
+	    repositories {
+	        maven {
+						 name 'jcenter'
+	            url "$buildDir/repo"
+	        }
+	    }
+			
+		  publications {
+		         mavenJava(MavenPublication) {
+		             from components.java
+		         }
+		  }		
+	}
+}
+
+def liveTasks = [] 
+def taskLocator = {t -> t.name.contains('publish')}  
+project.afterEvaluate { evaluatedProject ->
+	evaluatedProject.subprojects.each {
+  	def publishingTasks = it.tasks.findAll(taskLocator).collect{it.name}
+		assert publishingTasks.sort() == ['publish', 'publishToMavenLocal']
+		liveTasks = it.tasks.matching(taskLocator).collect{it.name}
+	}
+}
+
+task liveTasks << {
+	assert liveTasks.sort() == ['publish', 'publishToMavenLocal', 'publishMavenJavaPublicationToMavenLocal', 'publishMavenJavaPublicationToJcenterRepository']
+}
