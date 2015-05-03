@@ -57,3 +57,7 @@ task printTasks << {
   assert liveTasks.sort() == ['publish', 'publishToMavenLocal', 'publishMavenJavaPublicationToMavenLocal', 'publishMavenJavaPublicationToJcenterRepository']
   assert executionTimeTasks.sort() == ['publish', 'publishToMavenLocal', 'publishMavenJavaPublicationToMavenLocal', 'publishMavenJavaPublicationToJcenterRepository']
 }
+
+wrapper {
+  gradleVersion = "2.4-rc-2"
+}
