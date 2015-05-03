@@ -1,41 +1,59 @@
 repositories {
-    jcenter()
+  jcenter()
 }
 
 dependencies {
 }
 
-subprojects{
-	apply plugin: 'groovy'
-	apply plugin: 'maven-publish'
-	
-	
-	publishing {
-	    repositories {
-	        maven {
-						 name 'jcenter'
-	            url "$buildDir/repo"
-	        }
-	    }
-			
-		  publications {
-		         mavenJava(MavenPublication) {
-		             from components.java
-		         }
-		  }		
-	}
+subprojects {
+  apply plugin: 'groovy'
+  apply plugin: 'maven-publish'
+
+  task dummyTask() {}
+
+  publishing {
+    repositories {
+      maven {
+        name 'jcenter'
+        url "$buildDir/repo"
+      }
+    }
+
+    publications {
+      mavenJava(MavenPublication) {
+        from components.java
+      }
+    }
+  }
 }
 
-def liveTasks = [] 
-def taskLocator = {t -> t.name.contains('publish')}  
+def liveTasks = []
+def taskLocator = { t -> t.name.contains('publish') }
+
 project.afterEvaluate { evaluatedProject ->
-	evaluatedProject.subprojects.each {
-  	def publishingTasks = it.tasks.findAll(taskLocator).collect{it.name}
-		assert publishingTasks.sort() == ['publish', 'publishToMavenLocal']
-		liveTasks = it.tasks.matching(taskLocator).collect{it.name}
-	}
+  evaluatedProject.subprojects.each {
+    //Can find a custom task
+    assert it.tasks.findAll { t -> t.name.contains('dummy') }
+
+    def publishingTasks = it.tasks.findAll(taskLocator).collect { it.name }
+
+    assert publishingTasks.sort() == ['publish', 'publishToMavenLocal']
+    liveTasks.addAll(it.tasks.matching(taskLocator).collect { it.name })
+  }
 }
 
-task liveTasks << {
-	assert liveTasks.sort() == ['publish', 'publishToMavenLocal', 'publishMavenJavaPublicationToMavenLocal', 'publishMavenJavaPublicationToJcenterRepository']
+task printTasks << {
+  def executionTimeTasks = []
+  project.subprojects.each { subProject ->
+
+    executionTimeTasks.addAll(subProject.tasks.findAll(taskLocator).collect { it.name })
+
+    //Why can it be found by name?
+    assert subProject.tasks.findByName('publishMavenJavaPublicationToMavenLocal')
+  }
+
+  logger.quiet("Live tasks are: $liveTasks")
+  logger.quiet("Execution pahse tasks are: $executionTimeTasks")
+  assert liveTasks.sort() == ['publish', 'publishToMavenLocal', 'publishMavenJavaPublicationToMavenLocal', 'publishMavenJavaPublicationToJcenterRepository']
+  assert executionTimeTasks.sort() == ['publish', 'publishToMavenLocal', 'publishMavenJavaPublicationToMavenLocal', 'publishMavenJavaPublicationToJcenterRepository']
 }
